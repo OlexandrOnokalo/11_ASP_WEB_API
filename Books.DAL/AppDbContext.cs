@@ -13,7 +13,7 @@ namespace Books.DAL
         public DbSet<BookEntity> Books { get; set; }
         public DbSet<AuthorEntity> Authors { get; set; }
         public DbSet<GenreEntity> Genres { get; set; }
-        public DbSet<BooksGenreEntity> BooksGenres { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -51,6 +51,19 @@ namespace Books.DAL
                 .HasMaxLength(100);
             });
 
+            //Genres
+            builder.Entity<GenreEntity>(e =>
+            {
+                e.HasKey(g => g.Id);
+
+                e.HasIndex(g => g.Name)
+                .IsUnique();
+
+                e.Property(g => g.Name)
+                .IsRequired()
+                .HasMaxLength(50);
+            });
+
             // Relationships
             builder.Entity<BookEntity>()
                 .HasOne(b => b.Author)
@@ -58,21 +71,14 @@ namespace Books.DAL
                 .HasForeignKey(b => b.AuthorId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // BooksGenre Many-to-Many configuration
-            builder.Entity<BooksGenreEntity>()
-                .HasKey(bg => new { bg.BookId, bg.GenreId });
+            builder.Entity<BookEntity>()
+                .HasMany(b => b.Genres)
+                .WithMany(g => g.Books)
+                .UsingEntity("BookGenres");
 
-            builder.Entity<BooksGenreEntity>()
-                .HasOne(bg => bg.Book)
-                .WithMany(b => b.BooksGenres)
-                .HasForeignKey(bg => bg.BookId)
-                .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<BooksGenreEntity>()
-                .HasOne(bg => bg.Genre)
-                .WithMany(g => g.BooksGenres)
-                .HasForeignKey(bg => bg.GenreId)
-                .OnDelete(DeleteBehavior.Cascade);
+
+
 
             base.OnModelCreating(builder);
         }

@@ -1,6 +1,6 @@
 ﻿namespace Books.DAL.Entities
 {
-    public class BookEntity
+    public class BookEntity : BaseEntity
     {
         public int Id { get; set; }
         public required string Title { get; set; }
@@ -10,10 +10,11 @@
         public int Pages { get; set; } = 0;
         public int PublishYear { get; set; } = DateTime.UtcNow.Year;
 
-        public ICollection<BooksGenreEntity> BooksGenres { get; set; } = new List<BooksGenreEntity>();
+        
         public int? AuthorId { get; set; }
         public AuthorEntity? Author { get; set; }
 
-        
+        public List<GenreEntity> Genres { get; set; } = [];
+
     }
 }

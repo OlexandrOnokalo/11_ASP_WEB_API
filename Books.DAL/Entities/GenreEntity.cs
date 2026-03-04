@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Books.DAL.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace Books.DAL.Entities
 {
-    public class GenreEntity
+    public class GenreEntity : BaseEntity
     {
         public int Id { get; set; }
         public required string Name { get; set; }
 
-        public ICollection<BooksGenreEntity> BooksGenres { get; set; } = [];
+        public List<BookEntity> Books { get; set; } = [];
     }
 }
