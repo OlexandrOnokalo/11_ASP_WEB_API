@@ -3,7 +3,6 @@ namespace Books.DAL.Entities
 {
     public class AuthorEntity : BaseEntity
     {
-        public int Id { get; set; }
         public required string Name { get; set; }
         public DateTime BirthDate { get; set; } = DateTime.UtcNow;
         public string? Image { get; set; }

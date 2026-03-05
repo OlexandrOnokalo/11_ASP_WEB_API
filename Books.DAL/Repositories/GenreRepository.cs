@@ -8,36 +8,37 @@ using System.Threading.Tasks;
 
 namespace Books.DAL.Repositories
 {
-    public class AuthorRepository : GenericRepository<AuthorEntity>
+    public class GenreRepository : GenericRepository<GenreEntity>
     {
         private readonly AppDbContext _context;
 
-        public AuthorRepository(AppDbContext context)
+        public GenreRepository(AppDbContext context)
             : base(context)
         {
             _context = context;
         }
-
-        public IQueryable<AuthorEntity> Authors => GetAll();
-
-        public async Task<AuthorEntity?> GetByNameAsync(string name)
+        public IQueryable<GenreEntity> Genres => GetAll();
+        public async Task<GenreEntity?> GetByNameAsync(string name)
         {
-            return await Authors
+            return await Genres
                 .FirstOrDefaultAsync(a => a.Name.ToLower() == name.ToLower());
         }
 
 
-        public async Task<bool> AddBookAsync(AuthorEntity author, BookEntity book)
-        {
-            var authorBooks = await GetBooksAsync(author);
 
-            if (!authorBooks.Contains(book))
+        public async Task<bool> AddBookAsync(GenreEntity genre, BookEntity book)
+        {
+            var genreBooks = await GetBooksAsync(genre);
+
+            if (!genreBooks.Contains(book))
             {
-                author.Books.Add(book);
+                genre.Books.Add(book);
                 return (await _context.SaveChangesAsync()) != 0;
             }
-
             return false;
         }
+
+
+
     }
 }

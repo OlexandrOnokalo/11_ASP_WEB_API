@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Books.DAL;
 using Books.DAL.Seeding;
-using Books.DAL.Initializer;
 using Books.DAL.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);

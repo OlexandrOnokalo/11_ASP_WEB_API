@@ -8,10 +8,10 @@ namespace Books.DAL.Entities
 {
     public interface IBaseEntity
     {
-        int Id { get; }
+        int Id { get; set; }
         DateTime CreateDate { get; set; }
-
     }
+
     public class BaseEntity : IBaseEntity
     {
         public int Id { get; set; }
