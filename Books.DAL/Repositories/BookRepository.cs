@@ -36,11 +36,11 @@ namespace Books.DAL.Repositories
                 .FirstOrDefaultAsync(a => a.Rating == rating);
         }
 
-        public async Task<List<BookEntity>> GetByGenreAsync(GenreEntity entity)
+        public async Task<List<BookEntity>> GetByGenreAsync(string genre)
         {
-            return await _context.Books
-                .AsNoTracking()
-                .Where(b => b.Genres.Any(g => g.Id == entity.Id))
+            return await Books
+                .Include(b => b.Genres)
+                .Where(b => b.Genres.Select(g => g.Name.ToLower()).Contains(genre.ToLower()))
                 .ToListAsync();
         }
 
