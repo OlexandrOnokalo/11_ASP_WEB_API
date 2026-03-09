@@ -1,10 +1,6 @@
 ﻿using Books.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Books.DAL.Repositories
 {
@@ -26,6 +22,13 @@ namespace Books.DAL.Repositories
                 .FirstOrDefaultAsync(a => a.Name.ToLower() == name.ToLower());
         }
 
+        public async Task<List<BookEntity>> GetBooksAsync(AuthorEntity entity)
+        {
+            return await _context.Books
+                .AsNoTracking()
+                .Where(b => b.AuthorId == entity.Id)
+                .ToListAsync();
+        }
 
         public async Task<bool> AddBookAsync(AuthorEntity author, BookEntity book)
         {

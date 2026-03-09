@@ -26,6 +26,15 @@ namespace Books.DAL.Repositories
 
 
 
+        public async Task<List<BookEntity>> GetBooksAsync(GenreEntity entity)
+        {
+            return await _context.Genres
+                .AsNoTracking()
+                .Where(g => g.Id == entity.Id)
+                .SelectMany(g => g.Books)
+                .ToListAsync();
+        }
+
         public async Task<bool> AddBookAsync(GenreEntity genre, BookEntity book)
         {
             var genreBooks = await GetBooksAsync(genre);
