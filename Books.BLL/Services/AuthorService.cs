@@ -1,32 +1,41 @@
 ﻿using Books.BLL.Dtos.Author;
+
 using Books.DAL.Entities;
 using Books.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Books.BLL.Services
 {
     public class AuthorService
     {
         private readonly AuthorRepository _authorRepository;
+        private readonly ImageService _imageService;
 
-        public AuthorService(AuthorRepository authorRepository)
+        public AuthorService(AuthorRepository authorRepository, ImageService imageService)
         {
             _authorRepository = authorRepository;
+            _imageService = imageService;
         }
 
-        public async Task<ServiceResponse> CreateAsync(CreateAuthorDto dto)
+        public async Task<ServiceResponse> CreateAsync(CreateAuthorDto dto, string imagesPath)
         {
             var entity = new AuthorEntity
             {
                 Name = dto.Name,
-                BirthDate = dto.BirthDate,
-                Image = dto.Image,
+                BirthDate = dto.BirthDate
             };
+
+            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
+            {
+                ServiceResponse response = await _imageService.SaveAsync(dto.Image, imagesPath);
+
+                if (!response.Success)
+                {
+                    return response;
+                }
+
+                entity.Image = response.Payload!.ToString()!;
+            }
 
             bool res = await _authorRepository.CreateAsync(entity);
 
@@ -52,7 +61,7 @@ namespace Books.BLL.Services
             };
         }
 
-        public async Task<ServiceResponse> UpdateAsync(UpdateAuthorDto dto)
+        public async Task<ServiceResponse> UpdateAsync(UpdateAuthorDto dto, string imagesPath)
         {
             var entity = await _authorRepository.GetByIdAsync(dto.Id);
 
@@ -68,7 +77,29 @@ namespace Books.BLL.Services
             string oldName = entity.Name;
             entity.Name = dto.Name;
             entity.BirthDate = dto.BirthDate;
-            entity.Image = dto.Image;
+
+            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
+            {
+                if (!string.IsNullOrEmpty(entity.Image))
+                {
+                    string imagePath = Path.Combine(imagesPath, entity.Image);
+                    var deleteResponse = _imageService.Delete(imagePath);
+
+                    if (!deleteResponse.Success)
+                    {
+                        return deleteResponse;
+                    }
+                }
+
+                var saveResponse = await _imageService.SaveAsync(dto.Image, imagesPath);
+
+                if (!saveResponse.Success)
+                {
+                    return saveResponse;
+                }
+
+                entity.Image = saveResponse.Payload!.ToString()!;
+            }
 
             bool res = await _authorRepository.UpdateAsync(entity);
 
@@ -94,7 +125,7 @@ namespace Books.BLL.Services
             };
         }
 
-        public async Task<ServiceResponse> DeleteAsync(int id)
+        public async Task<ServiceResponse> DeleteAsync(int id, string imagesPath)
         {
             var entity = await _authorRepository.GetByIdAsync(id);
 
@@ -105,6 +136,17 @@ namespace Books.BLL.Services
                     Success = false,
                     Message = $"Автора з id {id} не існує"
                 };
+            }
+
+            if (!string.IsNullOrEmpty(entity.Image))
+            {
+                string imagePath = Path.Combine(imagesPath, entity.Image);
+                var response = _imageService.Delete(imagePath);
+
+                if (!response.Success)
+                {
+                    return response;
+                }
             }
 
             bool res = await _authorRepository.DeleteAsync(entity);

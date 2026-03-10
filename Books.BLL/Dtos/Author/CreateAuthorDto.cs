@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -12,6 +13,6 @@ namespace Books.BLL.Dtos.Author
         [Required]
         public string Name { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; } = DateTime.UtcNow;
-        public string? Image { get; set; }
+        public IFormFile? Image { get; set; }
     }
 }

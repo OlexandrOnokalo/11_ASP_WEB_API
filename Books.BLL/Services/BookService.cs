@@ -13,24 +13,37 @@ namespace Books.BLL.Services
     public class BookService
     {
         private readonly BookRepository _bookRepository;
+        private readonly ImageService _imageService;
 
-        public BookService(BookRepository bookRepository)
+        public BookService(BookRepository bookRepository, ImageService imageService)
         {
             _bookRepository = bookRepository;
+            _imageService = imageService;
         }
 
-        public async Task<ServiceResponse> CreateAsync(CreateBookDto dto)
+        public async Task<ServiceResponse> CreateAsync(CreateBookDto dto, string imagesPath)
         {
             var entity = new BookEntity
             {
                 Title = dto.Title,
-                Description = dto.Description,
-                Image = dto.Image,
+                Description = dto.Description,                
                 Rating = dto.Rating,
                 Pages = dto.Pages,
                 PublishYear = dto.PublishYear,
                 AuthorId = dto.AuthorId == 0 ? null : dto.AuthorId
             };
+
+            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
+            {
+                ServiceResponse response = await _imageService.SaveAsync(dto.Image, imagesPath);
+
+                if (!response.Success)
+                {
+                    return response;
+                }
+
+                entity.Image = response.Payload!.ToString()!;
+            }
 
             bool res = await _bookRepository.CreateAsync(entity);
 
@@ -60,7 +73,7 @@ namespace Books.BLL.Services
             };
         }
 
-        public async Task<ServiceResponse> UpdateAsync(UpdateBookDto dto)
+        public async Task<ServiceResponse> UpdateAsync(UpdateBookDto dto, string imagesPath)
         {
             var entity = await _bookRepository.GetByIdAsync(dto.Id);
 
@@ -76,11 +89,33 @@ namespace Books.BLL.Services
             string oldTitle = entity.Title;
             entity.Title = dto.Title;
             entity.Description = dto.Description;
-            entity.Image = dto.Image;
             entity.Rating = dto.Rating;
             entity.Pages = dto.Pages;
             entity.PublishYear = dto.PublishYear;
             entity.AuthorId = dto.AuthorId == 0 ? null : dto.AuthorId;
+
+            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
+            {
+                if (!string.IsNullOrEmpty(entity.Image))
+                {
+                    string imagePath = Path.Combine(imagesPath, entity.Image);
+                    var deleteResponse = _imageService.Delete(imagePath);
+
+                    if (!deleteResponse.Success)
+                    {
+                        return deleteResponse;
+                    }
+                }
+
+                var saveResponse = await _imageService.SaveAsync(dto.Image, imagesPath);
+
+                if (!saveResponse.Success)
+                {
+                    return saveResponse;
+                }
+
+                entity.Image = saveResponse.Payload!.ToString()!;
+            }
 
             bool res = await _bookRepository.UpdateAsync(entity);
 
@@ -110,7 +145,7 @@ namespace Books.BLL.Services
             };
         }
 
-        public async Task<ServiceResponse> DeleteAsync(int id)
+        public async Task<ServiceResponse> DeleteAsync(int id, string imagesPath)
         {
             var entity = await _bookRepository.GetByIdAsync(id);
 
@@ -121,6 +156,17 @@ namespace Books.BLL.Services
                     Success = false,
                     Message = $"Книги з id {id} не існує"
                 };
+            }
+
+            if (!string.IsNullOrEmpty(entity.Image))
+            {
+                string imagePath = Path.Combine(imagesPath, entity.Image);
+                var response = _imageService.Delete(imagePath);
+
+                if (!response.Success)
+                {
+                    return response;
+                }
             }
 
             bool res = await _bookRepository.DeleteAsync(entity);

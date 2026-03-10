@@ -20,4 +20,10 @@
     <ProjectReference Include="..\Books.DAL\Books.DAL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Storage\Books\" />
+    <Folder Include="Storage\Authors\" />
+    <Folder Include="Storage\Share\" />
+  </ItemGroup>
+
 </Project>

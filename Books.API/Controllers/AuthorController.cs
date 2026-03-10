@@ -1,8 +1,9 @@
-﻿using Books.BLL.Dtos.Author;
-using Microsoft.AspNetCore.Mvc;
-using Books.API.Extensions;
-
+﻿using Books.API.Extensions;
+using Books.API.Settings;
+using Books.BLL.Dtos.Author;
 using Books.BLL.Services;
+using Microsoft.AspNetCore.Mvc;
+
 
 namespace Books.API.Controllers
 {
@@ -11,10 +12,14 @@ namespace Books.API.Controllers
     public class AuthorController : ControllerBase
     {
         private readonly AuthorService _authorService;
+        private readonly string _authorsPath;
 
-        public AuthorController(AuthorService authorService)
+        public AuthorController(AuthorService authorService, IWebHostEnvironment environment)
         {
             _authorService = authorService;
+
+            string rootPath = environment.ContentRootPath;
+            _authorsPath = Path.Combine(rootPath, StaticFilesSettings.StorageDir, StaticFilesSettings.AuthorsDir);
         }
 
         [HttpGet]
@@ -32,23 +37,23 @@ namespace Books.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateAsync([FromBody] CreateAuthorDto dto)
+        public async Task<IActionResult> CreateAsync([FromForm] CreateAuthorDto dto)
         {
-            var response = await _authorService.CreateAsync(dto);
+            var response = await _authorService.CreateAsync(dto, _authorsPath);
             return this.GetAction(response);
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateAsync([FromBody] UpdateAuthorDto dto)
+        public async Task<IActionResult> UpdateAsync([FromForm] UpdateAuthorDto dto)
         {
-            var response = await _authorService.UpdateAsync(dto);
+            var response = await _authorService.UpdateAsync(dto, _authorsPath);
             return this.GetAction(response);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAsync(int id)
         {
-            var response = await _authorService.DeleteAsync(id);
+            var response = await _authorService.DeleteAsync(id, _authorsPath);
             return this.GetAction(response);
         }
     }

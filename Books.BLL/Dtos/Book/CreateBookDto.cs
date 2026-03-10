@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,7 +13,7 @@ namespace Books.BLL.Dtos.Book
         [Required]
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public string? Image { get; set; }
+        public IFormFile? Image { get; set; }
         public float Rating { get; set; } = 0f;
         public int Pages { get; set; } = 0;
         public int PublishYear { get; set; } = DateTime.UtcNow.Year;
