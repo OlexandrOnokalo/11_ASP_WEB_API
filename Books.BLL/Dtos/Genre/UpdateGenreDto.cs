@@ -1,22 +1,17 @@
-﻿using Microsoft.AspNetCore.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Books.BLL.Dtos.Author
+namespace Books.BLL.Dtos.Genre
 {
-    public class UpdateAuthorDto
+    public class UpdateGenreDto
     {
         [Required]
         public int Id { get; set; }
         [Required]
         public string Name { get; set; } = string.Empty;
-
-        public string? Country { get; set; }
-        public DateTime BirthDate { get; set; } = DateTime.UtcNow;
-        public IFormFile? Image { get; set; }
     }
 }

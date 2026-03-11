@@ -11,11 +11,22 @@ var builder = WebApplication.CreateBuilder(args);
 // Add repositories
 builder.Services.AddScoped<AuthorRepository>();
 builder.Services.AddScoped<BookRepository>();
+builder.Services.AddScoped<GenreRepository>();
 
 // Add services
 builder.Services.AddScoped<AuthorService>();
 builder.Services.AddScoped<ImageService>();
 builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<GenreService>();
+
+//Add automapper
+string automapperKey = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikx1Y2t5UGVubnlTb2Z0d2FyZUxpY2Vuc2VLZXkvYmJiMTNhY2I1OTkwNGQ4OWI0Y2IxYzg1ZjA4OGNjZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x1Y2t5cGVubnlzb2Z0d2FyZS5jb20iLCJhdWQiOiJMdWNreVBlbm55U29mdHdhcmUiLCJleHAiOiIxODA0NzIzMjAwIiwiaWF0IjoiMTc3MzI0MTA3OCIsImFjY291bnRfaWQiOiIwMTljZGQ2NWYxZWQ3OTA3YjcyYjRhMDNiNjViMTkzZiIsImN1c3RvbWVyX2lkIjoiY3RtXzAxa2tlcGY0ZTdqcDRjenZkdjJyaHN6eXg0Iiwic3ViX2lkIjoiLSIsImVkaXRpb24iOiIwIiwidHlwZSI6IjIifQ.svKaWOFtPPPjBYzBIH7ggsnLcM_yAph6LDEp9I2BXoewAfgLI9-IKPVjmkLxEGbDWjQun7pbhwnoAtEoc2hMKDxYf6mmFL2I4QwfS7TFHHjEIQgjriB1AiIylPEfTxoGCskPfh2dcacJlOMiDcR7OV8eL6_fR2puUaCZxGbOa4nsLGhqmygMdQULWLxlhUWbiik8zWS278P6BincBDGyhL_PnODzfl11CXVIU_0iSNamBDMmPfgb_K3PkU45THey8swhDVA93Zfiwiu7uwiVv2Gze0Mc1i3UZ0XDE9bOfN18uBVl7dwvK9wRENlYCqBRulgI0r97vHrj17EvmdqTaA";
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.LicenseKey = automapperKey;
+
+}, AppDomain.CurrentDomain.GetAssemblies());
+
 // Add dbcontext
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

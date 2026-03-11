@@ -4,14 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Books.BLL.Dtos.Author
+namespace Books.BLL.Dtos.Genre
 {
-    public class AuthorDto
+    public class GenreDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string? Country { get; set; }
-        public DateTime BirthDate { get; set; } = DateTime.UtcNow;
-        public string? Image { get; set; }
     }
 }

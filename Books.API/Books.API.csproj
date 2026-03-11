@@ -21,8 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Storage\Books\" />
     <Folder Include="Storage\Authors\" />
+    <Folder Include="Storage\Authors\" />
+    <Folder Include="Storage\Books\" />
     <Folder Include="Storage\Share\" />
   </ItemGroup>
 
