@@ -1,12 +1,8 @@
+using AutoMapper;
 using Books.BLL.Dtos.Book;
 using Books.DAL.Entities;
 using Books.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Books.BLL.Services
 {
@@ -14,24 +10,18 @@ namespace Books.BLL.Services
     {
         private readonly BookRepository _bookRepository;
         private readonly ImageService _imageService;
+        private readonly IMapper _mapper;
 
-        public BookService(BookRepository bookRepository, ImageService imageService)
+        public BookService(BookRepository bookRepository, ImageService imageService, IMapper mapper)
         {
             _bookRepository = bookRepository;
             _imageService = imageService;
+            _mapper = mapper;
         }
 
         public async Task<ServiceResponse> CreateAsync(CreateBookDto dto, string imagesPath)
         {
-            var entity = new BookEntity
-            {
-                Title = dto.Title,
-                Description = dto.Description,                
-                Rating = dto.Rating,
-                Pages = dto.Pages,
-                PublishYear = dto.PublishYear,
-                AuthorId = dto.AuthorId == 0 ? null : dto.AuthorId
-            };
+            var entity = _mapper.Map<BookEntity>(dto);
 
             if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
             {
@@ -59,17 +49,7 @@ namespace Books.BLL.Services
             return new ServiceResponse
             {
                 Message = $"Книга '{entity.Title}' успішно додана",
-                Payload = new BookDto
-                {
-                    Id = entity.Id,
-                    Title = entity.Title,
-                    Description = entity.Description,
-                    Image = entity.Image,
-                    Rating = entity.Rating,
-                    Pages = entity.Pages,
-                    PublishYear = entity.PublishYear,
-                    AuthorId = entity.AuthorId
-                }
+                Payload = _mapper.Map<BookDto>(entity)
             };
         }
 
@@ -87,12 +67,7 @@ namespace Books.BLL.Services
             }
 
             string oldTitle = entity.Title;
-            entity.Title = dto.Title;
-            entity.Description = dto.Description;
-            entity.Rating = dto.Rating;
-            entity.Pages = dto.Pages;
-            entity.PublishYear = dto.PublishYear;
-            entity.AuthorId = dto.AuthorId == 0 ? null : dto.AuthorId;
+            entity = _mapper.Map(dto, entity);
 
             if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
             {
@@ -124,24 +99,14 @@ namespace Books.BLL.Services
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Не вдалося оновити книгу"
+                    Message = "Не вдалося оновити книгу"
                 };
             }
 
             return new ServiceResponse
             {
                 Message = $"Книга '{oldTitle}' успішно оновлена",
-                Payload = new BookDto
-                {
-                    Id = entity.Id,
-                    Title = entity.Title,
-                    Description = entity.Description,
-                    Image = entity.Image,
-                    Rating = entity.Rating,
-                    Pages = entity.Pages,
-                    PublishYear = entity.PublishYear,
-                    AuthorId = entity.AuthorId
-                }
+                Payload = _mapper.Map<BookDto>(entity)
             };
         }
 
@@ -176,24 +141,14 @@ namespace Books.BLL.Services
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Не вдалося видалити книгу"
+                    Message = "Не вдалося видалити книгу"
                 };
             }
 
             return new ServiceResponse
             {
                 Message = $"Книга '{entity.Title}' успішно видалена",
-                Payload = new BookDto
-                {
-                    Id = entity.Id,
-                    Title = entity.Title,
-                    Description = entity.Description,
-                    Image = entity.Image,
-                    Rating = entity.Rating,
-                    Pages = entity.Pages,
-                    PublishYear = entity.PublishYear,
-                    AuthorId = entity.AuthorId
-                }
+                Payload = _mapper.Map<BookDto>(entity)
             };
         }
 
@@ -213,35 +168,14 @@ namespace Books.BLL.Services
             return new ServiceResponse
             {
                 Message = "Книга успішно отримана",
-                Payload = new BookDto
-                {
-                    Id = entity.Id,
-                    Title = entity.Title,
-                    Description = entity.Description,
-                    Image = entity.Image,
-                    Rating = entity.Rating,
-                    Pages = entity.Pages,
-                    PublishYear = entity.PublishYear,
-                    AuthorId = entity.AuthorId
-                }
+                Payload = _mapper.Map<BookDto>(entity)
             };
         }
 
         public async Task<ServiceResponse> GetAllAsync()
         {
-            var dtos = await _bookRepository.Books
-                .Select(b => new BookDto
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Description = b.Description,
-                    Image = b.Image,
-                    Rating = b.Rating,
-                    Pages = b.Pages,
-                    PublishYear = b.PublishYear,
-                    AuthorId = b.AuthorId
-                })
-                .ToListAsync();
+            var entities = await _bookRepository.Books.ToListAsync();
+            var dtos = _mapper.Map<List<BookDto>>(entities);
 
             return new ServiceResponse
             {
