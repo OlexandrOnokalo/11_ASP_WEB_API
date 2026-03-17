@@ -1,11 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Books.DAL.Entities;
+﻿using Books.DAL.Entities;
+using Books.DAL.Entities.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace Books.DAL
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<
+        AppUserEntity, AppRoleEntity, string,
+        AppUserClaimEntity, AppUserRoleEntity, AppUserLoginEntity,
+        AppRoleClaimEntity, AppUserTokenEntity>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        public AppDbContext(DbContextOptions options)
+            : base(options)
         {
 
         }
@@ -14,9 +21,11 @@ namespace Books.DAL
         public DbSet<AuthorEntity> Authors { get; set; }
         public DbSet<GenreEntity> Genres { get; set; }
 
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            base.OnModelCreating(builder);
+
+            // Books
             builder.Entity<BookEntity>(e =>
             {
                 e.HasKey(b => b.Id);
@@ -54,7 +63,7 @@ namespace Books.DAL
                 .HasMaxLength(50);
             });
 
-            //Genres
+            // Genres
             builder.Entity<GenreEntity>(e =>
             {
                 e.HasKey(g => g.Id);
@@ -63,8 +72,21 @@ namespace Books.DAL
                 .IsUnique();
 
                 e.Property(g => g.Name)
-                .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(50)
+                .IsRequired();
+            });
+
+            // User
+            builder.Entity<AppUserEntity>(e =>
+            {
+                e.Property(p => p.FirstName)
+                .HasMaxLength(100);
+
+                e.Property(p => p.LastName)
+                .HasMaxLength(100);
+
+                e.Property(p => p.Image)
+                .HasMaxLength(100);
             });
 
             // Relationships
@@ -79,11 +101,48 @@ namespace Books.DAL
                 .WithMany(g => g.Books)
                 .UsingEntity("BookGenres");
 
+            // Identity
+            builder.Entity<AppUserEntity>(b =>
+            {
+                // Each User can have many UserClaims
+                b.HasMany(e => e.Claims)
+                    .WithOne(e => e.User)
+                    .HasForeignKey(uc => uc.UserId)
+                    .IsRequired();
 
+                // Each User can have many UserLogins
+                b.HasMany(e => e.Logins)
+                    .WithOne(e => e.User)
+                    .HasForeignKey(ul => ul.UserId)
+                    .IsRequired();
 
+                // Each User can have many UserTokens
+                b.HasMany(e => e.Tokens)
+                    .WithOne(e => e.User)
+                    .HasForeignKey(ut => ut.UserId)
+                    .IsRequired();
 
+                // Each User can have many entries in the UserRole join table
+                b.HasMany(e => e.UserRoles)
+                    .WithOne(e => e.User)
+                    .HasForeignKey(ur => ur.UserId)
+                    .IsRequired();
+            });
 
-            base.OnModelCreating(builder);
+            builder.Entity<AppRoleEntity>(b =>
+            {
+                // Each Role can have many entries in the UserRole join table
+                b.HasMany(e => e.UserRoles)
+                    .WithOne(e => e.Role)
+                    .HasForeignKey(ur => ur.RoleId)
+                    .IsRequired();
+
+                // Each Role can have many associated RoleClaims
+                b.HasMany(e => e.RoleClaims)
+                    .WithOne(e => e.Role)
+                    .HasForeignKey(rc => rc.RoleId)
+                    .IsRequired();
+            });
         }
     }
 }

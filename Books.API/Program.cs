@@ -1,10 +1,17 @@
 using Books.API.Settings;
 using Books.BLL.Services;
 using Books.DAL;
+using Books.DAL.Entities.Identity;
 using Books.DAL.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 
+using Books.BLL.Settings;
+
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,15 +23,18 @@ builder.Services.AddScoped<GenreRepository>();
 // Add services
 builder.Services.AddScoped<AuthorService>();
 builder.Services.AddScoped<ImageService>();
-builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<GenreService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<JwtService>();
 
-//Add automapper
-string automapperKey = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikx1Y2t5UGVubnlTb2Z0d2FyZUxpY2Vuc2VLZXkvYmJiMTNhY2I1OTkwNGQ4OWI0Y2IxYzg1ZjA4OGNjZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x1Y2t5cGVubnlzb2Z0d2FyZS5jb20iLCJhdWQiOiJMdWNreVBlbm55U29mdHdhcmUiLCJleHAiOiIxODA0NzIzMjAwIiwiaWF0IjoiMTc3MzI0MTA3OCIsImFjY291bnRfaWQiOiIwMTljZGQ2NWYxZWQ3OTA3YjcyYjRhMDNiNjViMTkzZiIsImN1c3RvbWVyX2lkIjoiY3RtXzAxa2tlcGY0ZTdqcDRjenZkdjJyaHN6eXg0Iiwic3ViX2lkIjoiLSIsImVkaXRpb24iOiIwIiwidHlwZSI6IjIifQ.svKaWOFtPPPjBYzBIH7ggsnLcM_yAph6LDEp9I2BXoewAfgLI9-IKPVjmkLxEGbDWjQun7pbhwnoAtEoc2hMKDxYf6mmFL2I4QwfS7TFHHjEIQgjriB1AiIylPEfTxoGCskPfh2dcacJlOMiDcR7OV8eL6_fR2puUaCZxGbOa4nsLGhqmygMdQULWLxlhUWbiik8zWS278P6BincBDGyhL_PnODzfl11CXVIU_0iSNamBDMmPfgb_K3PkU45THey8swhDVA93Zfiwiu7uwiVv2Gze0Mc1i3UZ0XDE9bOfN18uBVl7dwvK9wRENlYCqBRulgI0r97vHrj17EvmdqTaA";
+// Settings
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+// Add automapper
+string automapperKey = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ikx1Y2t5UGVubnlTb2Z0d2FyZUxpY2Vuc2VLZXkvYmJiMTNhY2I1OTkwNGQ4OWI0Y2IxYzg1ZjA4OGNjZjkiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x1Y2t5cGVubnlzb2Z0d2FyZS5jb20iLCJhdWQiOiJMdWNreVBlbm55U29mdHdhcmUiLCJleHAiOiIxNzg5NTE2ODAwIiwiaWF0IjoiMTc1ODAwNDY5MiIsImFjY291bnRfaWQiOiIwMTk5NTEzZTdlYmY3YjYwOGI4Y2I3NTI3YTE3ZTI5MyIsImN1c3RvbWVyX2lkIjoiY3RtXzAxazU4a3hoZXN2ZWI3aDZncms2MHBrYXJrIiwic3ViX2lkIjoiLSIsImVkaXRpb24iOiIwIiwidHlwZSI6IjIifQ.OMUeI0YxSQYUSUYehr5O6yevTWgsGamrSrCFSZ7Sd3fNsl01WU-pr6M6wusxNSxoQ6w8-lqrjOk6gj8KShQQhmvz91wRuRm_rObvAaDQEBRDit7iSUe6J7EH8lDmpqlUuJQ8zN0lCTgIDwaHDaI9h4FcSVy6qmi68oETGI876KCUf5ifCCwDSpZjirIws5XvO6IpQEkCp8FWd2UkTWvrHaaJWFbxOWfKbx_j5AeHPE1o5Piiz7qF6QKX8MzOj44f0yRExRKMCeQSauqRBgO33CooOm0mxbU2-Mx5tb3PPHdaFe7YxPKdRYSJ1TsRn3DELSrxnKsPE11X4eIXYuJh6w";
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.LicenseKey = automapperKey;
-
 }, AppDomain.CurrentDomain.GetAssemblies());
 
 // Add dbcontext
@@ -34,6 +44,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     string? aivenDb = builder.Configuration.GetConnectionString("AivenDb");
     options.UseNpgsql(aivenDb);
 });
+
+// Add identity
+builder.Services.AddIdentity<AppUserEntity, AppRoleEntity>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+
+    options.Password.RequiredUniqueChars = 1;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireDigit = false;
+})
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddControllers();
 
@@ -51,6 +76,33 @@ builder.Services.AddCors(opt =>
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddSwaggerGen();
+
+// Add authentication
+string? secretKey = builder.Configuration["JwtSettings:SecretKey"];
+if (string.IsNullOrEmpty(secretKey))
+{
+    throw new ArgumentNullException("Jwt secret key is null");
+}
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        RequireExpirationTime = true,
+        ClockSkew = TimeSpan.Zero,
+        ValidateLifetime = true,
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+});
 
 var app = builder.Build();
 
@@ -71,15 +123,23 @@ string root = app.Environment.ContentRootPath;
 string storagePath = Path.Combine(root, StaticFilesSettings.StorageDir);
 
 // Books
-string _booksPath = Path.Combine(storagePath, StaticFilesSettings.BooksDir);
+string booksPath = Path.Combine(storagePath, StaticFilesSettings.BooksDir);
+if (!Directory.Exists(booksPath))
+{
+    Directory.CreateDirectory(booksPath);
+}
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(_booksPath),
+    FileProvider = new PhysicalFileProvider(booksPath),
     RequestPath = StaticFilesSettings.BookUrl
 });
 
 //Authors
 string authorsPath = Path.Combine(storagePath, StaticFilesSettings.AuthorsDir);
+if (!Directory.Exists(authorsPath))
+{
+    Directory.CreateDirectory(authorsPath);
+}
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(authorsPath),
@@ -88,16 +148,21 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Share
 string sharePath = Path.Combine(storagePath, StaticFilesSettings.ShareDir);
+if (!Directory.Exists(sharePath))
+{
+    Directory.CreateDirectory(sharePath);
+}
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(sharePath),
     RequestPath = StaticFilesSettings.ShareUrl
 });
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-//app.SeedAsync().Wait();
+
 
 app.Run();

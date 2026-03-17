@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
 using Books.BLL.Dtos.Genre;
+using Books.BLL.Services;
 using Books.DAL.Entities;
 using Books.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Books.BLL.Services
 {

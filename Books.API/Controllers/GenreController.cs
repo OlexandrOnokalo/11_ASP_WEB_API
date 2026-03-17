@@ -1,11 +1,15 @@
 ﻿using Books.API.Extensions;
 using Books.BLL.Dtos.Genre;
 using Books.BLL.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace Books.API.Controllers
 {
     [ApiController]
+    //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/genre")]
     public class GenreController : ControllerBase
     {
