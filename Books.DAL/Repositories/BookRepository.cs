@@ -24,13 +24,13 @@ namespace Books.DAL.Repositories
                 .FirstOrDefaultAsync(a => a.Title.ToLower() == title.ToLower());
         }
 
-        public async Task<BookEntity> GetByYearAsync(int year)
+        public async Task<BookEntity?> GetByYearAsync(int year)
         {
             return await Books
                 .FirstOrDefaultAsync(a => a.PublishYear == year);
         }
 
-        public async Task<BookEntity> GetByRatingAsync(float rating)
+        public async Task<BookEntity?> GetByRatingAsync(float rating)
         {
             return await Books
                 .FirstOrDefaultAsync(a => a.Rating == rating);

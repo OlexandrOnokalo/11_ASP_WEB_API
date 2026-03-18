@@ -20,7 +20,15 @@ namespace Books.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterDto dto)
         {
-            var response = await _authService.RegisterAsync(dto);
+            string callbackUrl = $"{Request.Scheme}://{Request.Host}/api/auth/confirm-email";
+            var response = await _authService.RegisterAsync(dto, callbackUrl);
+            return this.GetAction(response);
+        }
+
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmailAsync([FromQuery] string userId, [FromQuery] string token)
+        {
+            var response = await _authService.ConfirmEmailAsync(userId, token);
             return this.GetAction(response);
         }
 

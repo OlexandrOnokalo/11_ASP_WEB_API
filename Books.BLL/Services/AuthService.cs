@@ -1,189 +1,164 @@
-﻿using AutoMapper;
-using Books.BLL.Dtos.Author;
+﻿using Books.BLL.Dtos.Auth;
 using Books.BLL.Services;
-using Books.DAL.Entities;
-using Books.DAL.Repositories;
-using Microsoft.EntityFrameworkCore;
-
+using Books.DAL.Entities.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace Books.BLL.Services
 {
-    public class AuthorService
+    public class AuthService
     {
-        private readonly AuthorRepository _authorRepository;
-        private readonly ImageService _imageService;
-        private readonly IMapper _mapper;
+        private readonly UserManager<AppUserEntity> _userManager;
+        private readonly JwtService _jwtService;
+        private readonly EmailService _emailService;
 
-        public AuthorService(AuthorRepository authorRepository, ImageService imageService, IMapper mapper)
+        public AuthService(UserManager<AppUserEntity> userManager, JwtService jwtService, EmailService emailService)
         {
-            _authorRepository = authorRepository;
-            _imageService = imageService;
-            _mapper = mapper;
+            _userManager = userManager;
+            _jwtService = jwtService;
+            _emailService = emailService;
         }
 
-        public async Task<ServiceResponse> CreateAsync(CreateAuthorDto dto, string imagesPath)
+        public async Task<ServiceResponse> RegisterAsync(RegisterDto dto, string callbackUrl)
         {
-            var entity = _mapper.Map<AuthorEntity>(dto);
-
-            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
-            {
-                ServiceResponse response = await _imageService.SaveAsync(dto.Image, imagesPath);
-
-                if (!response.Success)
-                {
-                    return response;
-                }
-
-                entity.Image = response.Payload!.ToString()!;
-            }
-
-            bool res = await _authorRepository.CreateAsync(entity);
-
-            if (!res)
+            if (await EmailExistAsync(dto.Email))
             {
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = "Не вдалося додати автора"
+                    Message = $"Пошта '{dto.Email}' вже використовується"
                 };
+            }
+
+            if (await UserNameExistAsync(dto.UserName))
+            {
+                return new ServiceResponse
+                {
+                    Success = false,
+                    Message = $"Ім'я користувача '{dto.UserName}' зайняте"
+                };
+            }
+
+            var entity = new AppUserEntity
+            {
+                UserName = dto.UserName,
+                Email = dto.Email,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName
+            };
+
+            var createResult = await _userManager.CreateAsync(entity, dto.Password);
+
+            if (!createResult.Succeeded)
+            {
+                return new ServiceResponse
+                {
+                    Success = false,
+                    Message = createResult.Errors.First().Description
+                };
+            }
+
+            await _userManager.AddToRoleAsync(entity, "user");
+
+            
+            string token = await _userManager.GenerateEmailConfirmationTokenAsync(entity);
+            string encodedToken = Uri.EscapeDataString(token);
+            string confirmUrl = $"{callbackUrl}?userId={entity.Id}&token={encodedToken}";
+
+            string subject = "Підтвердження електронної пошти";
+            string body = $"""
+                <h2>Вітаємо, {entity.FirstName}!</h2>
+                <p>Дякуємо за реєстрацію. Для підтвердження електронної пошти натисніть кнопку нижче:</p>
+                <a href="{confirmUrl}" style="padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;border-radius:5px;">
+                    Підтвердити email
+                </a>
+                <p>Якщо ви не реєструвалися — просто ігноруйте цей лист.</p>
+                """;
+
+            var emailResponse = await _emailService.SendAsync(entity.Email!, subject, body);
+
+            if (!emailResponse.Success)
+            {
+                return emailResponse;
             }
 
             return new ServiceResponse
             {
-                Message = $"Автор '{entity.Name}' успішно доданий",
-                Payload = _mapper.Map<AuthorDto>(entity)
+                Message = "Ви успішно зареєструвалися. Перевірте пошту для підтвердження акаунта"
             };
         }
 
-        public async Task<ServiceResponse> UpdateAsync(UpdateAuthorDto dto, string imagesPath)
+        public async Task<ServiceResponse> ConfirmEmailAsync(string userId, string token)
         {
-            var entity = await _authorRepository.GetByIdAsync(dto.Id);
+            var entity = await _userManager.FindByIdAsync(userId);
 
             if (entity == null)
             {
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Автора з id {dto.Id} не існує"
+                    Message = "Користувача не знайдено"
                 };
             }
 
-            string oldName = entity.Name;
-            entity = _mapper.Map(dto, entity);
+            string decodedToken = Uri.UnescapeDataString(token);
+            var result = await _userManager.ConfirmEmailAsync(entity, decodedToken);
 
-            if (dto.Image != null && !string.IsNullOrEmpty(imagesPath))
-            {
-                if (!string.IsNullOrEmpty(entity.Image))
-                {
-                    string imagePath = Path.Combine(imagesPath, entity.Image);
-                    var deleteResponse = _imageService.Delete(imagePath);
-
-                    if (!deleteResponse.Success)
-                    {
-                        return deleteResponse;
-                    }
-                }
-
-                var saveResponse = await _imageService.SaveAsync(dto.Image, imagesPath);
-
-                if (!saveResponse.Success)
-                {
-                    return saveResponse;
-                }
-
-                entity.Image = saveResponse.Payload!.ToString()!;
-            }
-
-            bool res = await _authorRepository.UpdateAsync(entity);
-
-            if (!res)
+            if (!result.Succeeded)
             {
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Не вдалося оновити автора"
+                    Message = result.Errors.First().Description
                 };
             }
 
             return new ServiceResponse
             {
-                Message = $"Автор '{oldName}' успішно оновлений",
-                Payload = _mapper.Map<AuthorDto>(entity)
+                Message = "Email успішно підтверджено! Тепер ви можете увійти"
             };
         }
 
-        public async Task<ServiceResponse> DeleteAsync(int id, string imagesPath)
+        public async Task<ServiceResponse> LoginAsync(LoginDto dto)
         {
-            var entity = await _authorRepository.GetByIdAsync(id);
+            var entity = await _userManager.FindByEmailAsync(dto.Email);
 
             if (entity == null)
             {
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Автор з id {id} не існує"
+                    Message = $"Користувач з поштою '{dto.Email}' не існує"
                 };
             }
 
-            if (!string.IsNullOrEmpty(entity.Image))
-            {
-                string imagePath = Path.Combine(imagesPath, entity.Image);
-                var response = _imageService.Delete(imagePath);
-
-                if (!response.Success)
-                {
-                    return response;
-                }
-            }
-
-            bool res = await _authorRepository.DeleteAsync(entity);
+            bool res = await _userManager.CheckPasswordAsync(entity, dto.Password);
 
             if (!res)
             {
                 return new ServiceResponse
                 {
                     Success = false,
-                    Message = $"Не вдалося видалити автора"
+                    Message = "Пароль вказано невірно"
                 };
             }
 
+            string jwtToken = await _jwtService.GenerateAccessTokenAsync(entity);
+
             return new ServiceResponse
             {
-                Message = $"Автор '{entity.Name}' успішно видалений",
-                Payload = _mapper.Map<AuthorDto>(entity)
+                Message = "Успішний вхід",
+                Payload = jwtToken
             };
         }
 
-        public async Task<ServiceResponse> GetByIdAsync(int id)
+        private async Task<bool> EmailExistAsync(string email)
         {
-            var entity = await _authorRepository.GetByIdAsync(id);
-
-            if (entity == null)
-            {
-                return new ServiceResponse
-                {
-                    Success = false,
-                    Message = $"Автор з id {id} не існує"
-                };
-            }
-
-            return new ServiceResponse
-            {
-                Message = "Автор успішно отриманий",
-                Payload = _mapper.Map<AuthorDto>(entity)
-            };
+            return await _userManager.FindByEmailAsync(email) != null;
         }
 
-        public async Task<ServiceResponse> GetAllAsync()
+        private async Task<bool> UserNameExistAsync(string userName)
         {
-            var entities = await _authorRepository.Authors.ToListAsync();
-            var dtos = _mapper.Map<List<AuthorDto>>(entities);
-
-            return new ServiceResponse
-            {
-                Message = "Автори отримано",
-                Payload = dtos
-            };
+            return await _userManager.FindByNameAsync(userName) != null;
         }
     }
 }
