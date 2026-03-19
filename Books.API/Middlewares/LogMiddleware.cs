@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
 
 namespace Books.API.Middlewares
 {
@@ -15,40 +15,41 @@ namespace Books.API.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
+            var stopwatch = Stopwatch.StartNew();
+
             // Request
-            var headers = new List<string>();
+            var requestHeaders = new List<string>();
             foreach (var header in context.Request.Headers)
             {
-                headers.Add($"{header.Key} - {header.Value}");
+                requestHeaders.Add($"{header.Key} - {header.Value}");
             }
 
-            _logger.LogInformation("REQUEST");
+            _logger.LogInformation("REQUEST START");
             _logger.LogInformation($"Method: {context.Request.Method}\n" +
                 $"Path: {context.Request.Path}\n" +
                 $"Query: {context.Request.QueryString}\n" +
-                $"{string.Join('\n', headers)}");
+                $"{string.Join('\n', requestHeaders)}");
 
-            //var query = context.Request.Query;
-            //var apiKey = query.FirstOrDefault(q => q.Key == "apiKey");
-
-            //if(apiKey.Key != "apiKey" || apiKey.Value != "0000")
-            //{
-            //    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            //    return;
-            //}
-
-            await _next(context);
-
-            // Response
-            headers = new List<string>();
-            foreach (var header in context.Response.Headers)
+            try
             {
-                headers.Add($"{header.Key} - {header.Value}");
+                await _next(context);
             }
+            finally
+            {
+                stopwatch.Stop();
 
-            _logger.LogInformation("RESPONSE");
-            _logger.LogInformation($"Status code: {context.Response.StatusCode}\n" +
-                $"{string.Join('\n', headers)}");
+                // Response
+                var responseHeaders = new List<string>();
+                foreach (var header in context.Response.Headers)
+                {
+                    responseHeaders.Add($"{header.Key} - {header.Value}");
+                }
+
+                _logger.LogInformation("RESPONSE END");
+                _logger.LogInformation($"Status code: {context.Response.StatusCode}\n" +
+                    $"Elapsed: {stopwatch.ElapsedMilliseconds} ms\n" +
+                    $"{string.Join('\n', responseHeaders)}");
+            }
         }
     }
 }
