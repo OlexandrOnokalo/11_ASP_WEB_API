@@ -22,10 +22,10 @@ namespace Books.API.Controllers
             Directory.CreateDirectory(_booksPath);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAsync()
+        [HttpGet]       
+        public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var response = await _bookService.GetAllAsync();
+            var response = await _bookService.GetAllAsync(page, pageSize);
             return this.GetAction(response);
         }
 

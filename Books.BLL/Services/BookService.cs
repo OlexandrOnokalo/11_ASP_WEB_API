@@ -172,15 +172,36 @@ namespace Books.BLL.Services
             };
         }
 
-        public async Task<ServiceResponse> GetAllAsync()
+        public async Task<ServiceResponse> GetAllAsync(int page = 1, int pageSize = 10)
         {
-            var entities = await _bookRepository.Books.ToListAsync();
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 10 : pageSize;
+            pageSize = pageSize > 100 ? 100 : pageSize;
+
+            var query = _bookRepository.Books
+                .AsNoTracking()
+                .OrderBy(b => b.Id);
+
+            var totalCount = await query.CountAsync();
+
+            var entities = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
             var dtos = _mapper.Map<List<BookDto>>(entities);
 
             return new ServiceResponse
             {
                 Message = "Книги отримано",
-                Payload = dtos
+                Payload = new
+                {
+                    Items = dtos,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                }
             };
         }
     }
