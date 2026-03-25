@@ -23,9 +23,9 @@ namespace Books.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAsync()
+        public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var response = await _authorService.GetAllAsync();
+            var response = await _authorService.GetAllAsync(page, pageSize);
             return this.GetAction(response);
         }
 

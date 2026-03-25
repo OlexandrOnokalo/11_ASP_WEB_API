@@ -23,16 +23,11 @@ namespace Books.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAsync()
+        public async Task<IActionResult> GetAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            throw new NotImplementedException();
             _logger.LogInformation("Get all genres request");
-            //_logger.LogCritical("Critical");
-            //_logger.LogError("Error");
-            //_logger.LogWarning("Warning");
-            //_logger.LogTrace("Trace");
 
-            var response = await _genreService.GetAllAsync();
+            var response = await _genreService.GetAllAsync(page, pageSize);
             return this.GetAction(response);
         }
 
